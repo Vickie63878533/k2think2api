@@ -6,6 +6,6 @@ utils/
 .vscode/
 
 .env
-tokens.txt
 *.pyc
 *.log
+.claude/

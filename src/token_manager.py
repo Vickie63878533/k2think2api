@@ -16,52 +16,50 @@ logger = logging.getLogger(__name__)
 class TokenManager:
     """Token管理器 - 支持轮询、负载均衡和失效标记"""
     
-    def __init__(self, tokens_file: str = "tokens.txt", max_failures: int = 3):
+    def __init__(self, token_list: str = "", max_failures: int = 3):
         """
         初始化token管理器
-        
+
         Args:
-            tokens_file: token文件路径
+            token_list: 逗号分隔的token字符串
             max_failures: 最大失败次数，超过后标记为失效
         """
-        self.tokens_file = tokens_file
+        self.token_list = token_list
         self.max_failures = max_failures
         self.tokens: List[Dict] = []
         self.current_index = 0
         self.lock = threading.Lock()
-        
+
         # 加载tokens
         self.load_tokens()
-        
+
         if not self.tokens:
-            raise ValueError(f"未找到有效的token，请检查文件: {tokens_file}")
+            raise ValueError("未找到有效的token，请检查TOKEN_LIST环境变量")
     
     def load_tokens(self) -> None:
-        """从文件加载token列表"""
+        """从环境变量加载token列表"""
         try:
-            if not os.path.exists(self.tokens_file):
-                raise FileNotFoundError(f"Token文件不存在: {self.tokens_file}")
-            
-            with open(self.tokens_file, 'r', encoding='utf-8') as f:
-                lines = f.readlines()
-            
+            if not self.token_list.strip():
+                raise ValueError("Token列表为空")
+
+            # 分割逗号分隔的token
+            token_strings = [token.strip() for token in self.token_list.split(',') if token.strip()]
+
             self.tokens = []
-            for i, line in enumerate(lines):
-                token = line.strip()
-                if token:  # 忽略空行
-                    self.tokens.append({
-                        'token': token,
-                        'failures': 0,
-                        'is_active': True,
-                        'last_used': None,
-                        'last_failure': None,
-                        'index': i
-                    })
-            
+            for i, token in enumerate(token_strings):
+                self.tokens.append({
+                    'token': token,
+                    'failures': 0,
+                    'is_active': True,
+                    'last_used': None,
+                    'last_failure': None,
+                    'index': i
+                })
+
             logger.info(f"成功加载 {len(self.tokens)} 个token")
-            
+
         except Exception as e:
-            logger.error(f"加载token文件失败: {safe_str(e)}")
+            logger.error(f"解析token列表失败: {safe_str(e)}")
             raise
     
     def get_next_token(self) -> Optional[str]:
@@ -216,13 +214,18 @@ class TokenManager:
             
             logger.info(f"重置了 {reset_count} 个token，当前活跃token数: {len(self.tokens)}")
     
-    def reload_tokens(self) -> None:
-        """重新加载token文件"""
-        logger.info("重新加载token文件...")
+    def reload_tokens(self, new_token_list: str = None) -> None:
+        """重新加载token列表"""
+        logger.info("重新加载token列表...")
         old_count = len(self.tokens)
+
+        # 如果提供了新的token列表，则更新
+        if new_token_list is not None:
+            self.token_list = new_token_list
+
         self.load_tokens()
         new_count = len(self.tokens)
-        
+
         logger.info(f"Token重新加载完成: {old_count} -> {new_count}")
     
     def get_token_by_index(self, index: int) -> Optional[Dict]:

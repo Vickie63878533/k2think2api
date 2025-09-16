@@ -2,15 +2,13 @@ version: '3.8'
 
 services:
   k2think-api:
-    image: julienol/k2think2api:latest
+    image: ghcr.io/vickie63878533/k2think2api:latest
     container_name: k2think-api
     ports:
       - "${HOST_PORT:-8001}:8001"
     volumes:
-      # 映射tokens.txt文件到容器内
-      - ./tokens.txt:/app/tokens.txt:ro
-      # 可选：如果需要动态更新tokens.txt，可以去掉:ro标记
-      # - ./tokens.txt:/app/tokens.txt
+      # 映射.env文件到容器内（包含TOKEN_LIST配置）
+      - ./.env:/app/.env:ro
     env_file:
       - .env
     environment:

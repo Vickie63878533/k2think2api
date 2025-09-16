@@ -32,12 +32,13 @@ cp .env.example .env
 # 编辑 .env 文件，配置你的API密钥和其他选项
 ```
 
-3. **准备Token文件**
+3. **配置Token**
+
+在 `.env` 文件中的 `TOKEN_LIST` 环境变量中配置你的K2Think tokens，多个token用逗号分隔：
 
 ```bash
-# 复制token示例文件并编辑
-cp tokens.example.txt tokens.txt
-# 编辑tokens.txt文件，添加你的实际K2Think tokens
+# 示例配置
+TOKEN_LIST=token1,token2,token3
 ```
 
 4. **启动服务**
@@ -62,16 +63,14 @@ docker build -t k2think-api .
 2. **运行容器**
 
 ```bash
-# 先创建 .env 文件和tokens.txt，然后编辑配置
-cp .env.example.env
-cp tokens.example.txt tokens.txt
-# 编辑tokens.txt添加实际的token
+# 先创建 .env 文件，然后编辑配置
+cp .env.example .env
+# 编辑.env文件，在TOKEN_LIST中添加实际的token（逗号分隔）
 
 # 运行容器
 docker run -d \
   --name k2think-api \
   -p 8001:8001 \
-  -v $(pwd)/tokens.txt:/app/tokens.txt:ro \
   -v $(pwd)/.env:/app/.env:ro \
   k2think-api
 ```
@@ -81,12 +80,11 @@ docker run -d \
 3. **或者直接使用 docker-compose**
 
 ```bash
-# 先创建 .env 文件和tokens.txt
-cp .env.example.env
-cp tokens.example.txt tokens.txt
+# 先创建 .env 文件
+cp .env.example .env
 
 # 编辑 .env 文件配置API密钥等
-# 编辑 tokens.txt 添加实际的K2Think tokens
+# 在TOKEN_LIST中添加实际的K2Think tokens（逗号分隔）
 
 # 启动服务
 docker-compose up -d
@@ -143,7 +141,7 @@ curl -X POST http://localhost:8001/admin/tokens/reset/0
 curl -X POST http://localhost:8001/admin/tokens/reset-all
 ```
 
-重新加载token文件：
+重新加载token列表：
 
 ```bash
 curl -X POST http://localhost:8001/admin/tokens/reload
@@ -162,7 +160,7 @@ curl -X POST http://localhost:8001/admin/tokens/reload
 
 | 变量名                 | 默认值         | 说明              |
 | ---------------------- | -------------- | ----------------- |
-| `TOKENS_FILE`        | `tokens.txt` | Token文件路径     |
+| `TOKEN_LIST`         | `""`         | 逗号分隔的token列表 |
 | `MAX_TOKEN_FAILURES` | `3`          | Token最大失败次数 |
 
 ### 服务器配置
@@ -227,7 +225,7 @@ K2-Think 模型具有以下特点：
 1. **Token 相关问题**
 
    - **所有token失效**: 访问 `/admin/tokens/stats` 查看token状态，使用 `/admin/tokens/reset-all` 重置所有token
-   - **添加新token**: 编辑 `tokens.txt` 文件添加新token，然后访问 `/admin/tokens/reload` 重新加载
+   - **添加新token**: 编辑 `.env` 文件中的 `TOKEN_LIST` 环境变量，添加新token（用逗号分隔），然后重启服务或访问 `/admin/tokens/reload` 重新加载
    - **查看token状态**: 访问 `/health` 端点查看简要统计，或 `/admin/tokens/stats` 查看详细信息
 2. **端口冲突**
 
@@ -249,10 +247,10 @@ docker-compose logs -f k2think-api
 
 ### Docker部署注意事项
 
-1. **Token文件映射**
+1. **Token配置**
 
-   - `tokens.txt` 通过volume映射到容器内，支持动态更新
-   - 默认为只读映射，如果需要容器内修改请去掉 `:ro`
+   - Tokens通过环境变量 `TOKEN_LIST` 配置，多个token用逗号分隔
+   - 环境变量通过 `.env` 文件或docker-compose.yml配置
 2. **健康检查**
 
    - Docker容器包含健康检查机制
