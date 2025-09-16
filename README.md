@@ -28,7 +28,7 @@ pip install -r requirements.txt
 2. **配置环境变量**
 
 ```bash
-cp config.example .env
+cp .env.example .env
 # 编辑 .env 文件，配置你的API密钥和其他选项
 ```
 
@@ -63,7 +63,7 @@ docker build -t k2think-api .
 
 ```bash
 # 先创建 .env 文件和tokens.txt，然后编辑配置
-cp config.example .env
+cp .env.example.env
 cp tokens.example.txt tokens.txt
 # 编辑tokens.txt添加实际的token
 
@@ -82,7 +82,7 @@ docker run -d \
 
 ```bash
 # 先创建 .env 文件和tokens.txt
-cp config.example .env
+cp .env.example.env
 cp tokens.example.txt tokens.txt
 
 # 编辑 .env 文件配置API密钥等
@@ -126,21 +126,25 @@ curl http://localhost:8001/v1/models \
 ### Token管理接口
 
 查看token池状态：
+
 ```bash
 curl http://localhost:8001/admin/tokens/stats
 ```
 
 重置指定token：
+
 ```bash
 curl -X POST http://localhost:8001/admin/tokens/reset/0
 ```
 
 重置所有token：
+
 ```bash
 curl -X POST http://localhost:8001/admin/tokens/reset-all
 ```
 
 重新加载token文件：
+
 ```bash
 curl -X POST http://localhost:8001/admin/tokens/reload
 ```
@@ -148,25 +152,28 @@ curl -X POST http://localhost:8001/admin/tokens/reload
 ## 环境变量配置
 
 ### 基础配置
-| 变量名            | 默认值         | 说明                       |
-| ----------------- | -------------- | -------------------------- |
-| `VALID_API_KEY` | 无默认值       | API 访问密钥（必需）        |
-| `K2THINK_API_URL` | https://www.k2think.ai/api/chat/completions | K2Think API端点 |
 
-### Token管理配置  
-| 变量名            | 默认值         | 说明                       |
-| ----------------- | -------------- | -------------------------- |
-| `TOKENS_FILE`   | `tokens.txt`   | Token文件路径              |
-| `MAX_TOKEN_FAILURES` | `3`         | Token最大失败次数          |
+| 变量名              | 默认值                                      | 说明                 |
+| ------------------- | ------------------------------------------- | -------------------- |
+| `VALID_API_KEY`   | 无默认值                                    | API 访问密钥（必需） |
+| `K2THINK_API_URL` | https://www.k2think.ai/api/chat/completions | K2Think API端点      |
+
+### Token管理配置
+
+| 变量名                 | 默认值         | 说明              |
+| ---------------------- | -------------- | ----------------- |
+| `TOKENS_FILE`        | `tokens.txt` | Token文件路径     |
+| `MAX_TOKEN_FAILURES` | `3`          | Token最大失败次数 |
 
 ### 服务器配置
-| 变量名            | 默认值         | 说明                       |
-| ----------------- | -------------- | -------------------------- |
-| `HOST`          | `0.0.0.0`    | 服务监听地址               |
-| `PORT`          | `8001`       | 服务端口                   |
-| `TOOL_SUPPORT`  | `true`       | 是否启用工具调用功能       |
 
-详细配置说明请参考 `config.example` 文件。
+| 变量名           | 默认值      | 说明                 |
+| ---------------- | ----------- | -------------------- |
+| `HOST`         | `0.0.0.0` | 服务监听地址         |
+| `PORT`         | `8001`    | 服务端口             |
+| `TOOL_SUPPORT` | `true`    | 是否启用工具调用功能 |
+
+详细配置说明请参考 `.env.example` 文件。
 
 ## Python SDK 使用示例
 
@@ -243,14 +250,15 @@ docker-compose logs -f k2think-api
 ### Docker部署注意事项
 
 1. **Token文件映射**
-   - `tokens.txt` 通过volume映射到容器内，支持动态更新
-   - 默认为只读映射，如果需要容器内修改请去掉`:ro`
 
+   - `tokens.txt` 通过volume映射到容器内，支持动态更新
+   - 默认为只读映射，如果需要容器内修改请去掉 `:ro`
 2. **健康检查**
+
    - Docker容器包含健康检查机制
    - 可通过 `docker ps` 查看健康状态
-
 3. **安全考虑**
+
    - 容器以非root用户运行
    - 敏感文件通过volume挂载而非打包到镜像中
 
@@ -265,116 +273,6 @@ K2Think API 代理现在支持 OpenAI Function Calling 规范的工具调用功�
 - ✅ 流式和非流式响应中的工具调用检测
 - ✅ 智能 JSON 解析和工具调用提取
 - ✅ 支持多种工具调用格式（JSON 代码块、内联 JSON、自然语言）
-
-### 环境变量配置
-
-### 快速配置检查
-
-使用配置检查脚本验证你的环境变量设置：
-
-```bash
-# 检查当前配置
-python check_config_simple.py
-
-# 查看配置示例
-python check_config_simple.py --example
-```
-
-### 配置变量说明
-
-| 变量名           | 默认值     | 说明                       |
-| ---------------- | ---------- | -------------------------- |
-| `TOOL_SUPPORT` | `true`   | 是否启用工具调用功能       |
-
-
-### 使用示例
-
-```python
-import openai
-
-client = openai.OpenAI(
-    base_url="http://localhost:8001/v1",
-    api_key="sk-k2think"
-)
-
-# 定义工具
-tools = [
-    {
-        "type": "function",
-        "function": {
-            "name": "get_weather",
-            "description": "获取指定城市的天气信息",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "city": {
-                        "type": "string",
-                        "description": "城市名称，例如：北京、上海"
-                    },
-                    "unit": {
-                        "type": "string",
-                        "enum": ["celsius", "fahrenheit"],
-                        "description": "温度单位"
-                    }
-                },
-                "required": ["city"]
-            }
-        }
-    }
-]
-
-# 发送工具调用请求
-response = client.chat.completions.create(
-    model="MBZUAI-IFM/K2-Think",
-    messages=[
-        {"role": "user", "content": "北京今天天气怎么样？"}
-    ],
-    tools=tools,
-    tool_choice="auto"  # auto, none, required 或指定特定工具
-)
-
-# 处理响应
-if response.choices[0].message.tool_calls:
-    for tool_call in response.choices[0].message.tool_calls:
-        function_name = tool_call.function.name
-        function_args = tool_call.function.arguments
-        print(f"调用工具: {function_name}")
-        print(f"参数: {function_args}")
-  
-        # 在这里执行实际的工具调用
-        # tool_result = execute_tool(function_name, function_args)
-  
-        # 继续对话，将工具结果返回给模型
-        # ...
-```
-
-### 测试工具调用
-
-项目包含完整的测试套件，位于 `test/` 文件夹：
-
-```bash
-# 运行所有测试
-cd test
-python run_all_tests.py
-
-# 运行特定测试
-python run_all_tests.py debug_test      # 基础功能测试
-python run_all_tests.py test_tools      # 完整工具调用测试  
-python run_all_tests.py test_contentpart # ContentPart序列化测试
-python run_all_tests.py test_message_accumulation # 消息累积测试
-
-# 查看工具调用示例
-python tool_example.py
-```
-
-测试套件包含：
-
-- 🧪 基础功能和调试测试
-- 🛠️ 完整工具调用功能测试
-- 📝 ContentPart 序列化问题测试
-- 📊 消息累积问题验证测试
-
-详细说明请参考 [`test/README.md`](test/README.md)。
 
 ### tool_choice 参数说明
 
