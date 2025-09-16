@@ -23,6 +23,7 @@ from src.models import ChatCompletionRequest, ModelsResponse, ModelInfo
 from src.tool_handler import ToolHandler
 from src.response_processor import ResponseProcessor
 from src.token_manager import TokenManager
+from src.utils import safe_str
 
 logger = logging.getLogger(__name__)
 
@@ -115,12 +116,12 @@ class APIHandler:
             # 重新抛出自定义异常
             raise
         except Exception as e:
-            logger.error(f"API转发错误: {e}")
+            logger.error(f"API转发错误: {safe_str(e)}")
             raise HTTPException(
                 status_code=APIConstants.HTTP_INTERNAL_ERROR,
                 detail={
                     "error": {
-                        "message": str(e),
+                        "message": safe_str(e),
                         "type": ErrorMessages.API_ERROR
                     }
                 }
@@ -137,11 +138,11 @@ class APIHandler:
                     "tool_calls": msg.tool_calls
                 })
             except Exception as e:
-                logger.error(f"处理消息时出错: {e}, 消息: {msg}")
+                logger.error(f"处理消息时出错: {safe_str(e)}, 消息: {safe_str(msg)}")
                 # 使用默认值
                 raw_messages.append({
                     "role": msg.role, 
-                    "content": str(msg.content) if msg.content else "", 
+                    "content": safe_str(msg.content) if msg.content else "", 
                     "tool_calls": msg.tool_calls
                 })
         return raw_messages
@@ -216,7 +217,7 @@ class APIHandler:
                     "content": content
                 })
             except Exception as e:
-                logger.error(f"构建K2Think消息时出错: {e}, 消息: {msg}")
+                logger.error(f"构建K2Think消息时出错: {safe_str(e)}, 消息: {safe_str(msg)}")
                 # 使用安全的默认值
                 fallback_content = self.tool_handler._content_to_string(msg.get("content", ""))
                 k2think_messages.append({
@@ -389,7 +390,7 @@ class APIHandler:
                         self.token_manager.mark_token_success(token)
                     except Exception as e:
                         # 流式响应过程中出现错误，标记token失败
-                        self.token_manager.mark_token_failure(token, str(e))
+                        self.token_manager.mark_token_failure(token, safe_str(e))
                         raise e
                 
                 return StreamingResponse(
@@ -403,10 +404,10 @@ class APIHandler:
                 )
             except Exception as e:
                 last_exception = e
-                logger.warning(f"流式请求失败 (第{attempt + 1}次): {e}")
+                logger.warning(f"流式请求失败 (第{attempt + 1}次): {safe_str(e)}")
                 
                 # 标记token失败
-                token_failed = self.token_manager.mark_token_failure(token, str(e))
+                token_failed = self.token_manager.mark_token_failure(token, safe_str(e))
                 if token_failed:
                     logger.error(f"Token已被标记为失效")
                 
@@ -418,12 +419,12 @@ class APIHandler:
                 await asyncio.sleep(0.5)
         
         # 所有重试都失败了
-        logger.error(f"所有流式请求重试都失败了，最后错误: {last_exception}")
+        logger.error(f"所有流式请求重试都失败了，最后错误: {safe_str(last_exception)}")
         raise HTTPException(
             status_code=APIConstants.HTTP_INTERNAL_ERROR,
             detail={
                 "error": {
-                    "message": f"流式请求失败: {str(last_exception)}",
+                    "message": f"流式请求失败: {safe_str(last_exception)}",
                     "type": ErrorMessages.API_ERROR
                 }
             }
@@ -495,10 +496,10 @@ class APIHandler:
                 
             except Exception as e:
                 last_exception = e
-                logger.warning(f"非流式请求失败 (第{attempt + 1}次): {e}")
+                logger.warning(f"非流式请求失败 (第{attempt + 1}次): {safe_str(e)}")
                 
                 # 标记token失败
-                token_failed = self.token_manager.mark_token_failure(token, str(e))
+                token_failed = self.token_manager.mark_token_failure(token, safe_str(e))
                 if token_failed:
                     logger.error(f"Token已被标记为失效")
                 
@@ -510,12 +511,12 @@ class APIHandler:
                 await asyncio.sleep(0.5)
         
         # 所有重试都失败了
-        logger.error(f"所有非流式请求重试都失败了，最后错误: {last_exception}")
+        logger.error(f"所有非流式请求重试都失败了，最后错误: {safe_str(last_exception)}")
         raise HTTPException(
             status_code=APIConstants.HTTP_INTERNAL_ERROR,
             detail={
                 "error": {
-                    "message": f"非流式请求失败: {str(last_exception)}",
+                    "message": f"非流式请求失败: {safe_str(last_exception)}",
                     "type": ErrorMessages.API_ERROR
                 }
             }

@@ -18,6 +18,7 @@ from src.constants import (
 )
 from src.exceptions import UpstreamError, TimeoutError as ProxyTimeoutError
 from src.tool_handler import ToolHandler
+from src.utils import safe_str
 
 logger = logging.getLogger(__name__)
 
@@ -235,15 +236,15 @@ class ResponseProcessor:
                     logger.error(f"响应头: {dict(response.headers)}")
                     try:
                         error_body = response.text
-                        logger.error(f"错误响应体: {error_body}")
-                    except:
-                        logger.error("无法读取错误响应体")
+                        logger.error(f"错误响应体: {safe_str(error_body)}")
+                    except Exception as e:
+                        logger.error(f"无法读取错误响应体: {safe_str(e)}")
                 
                 response.raise_for_status()
                 return response
                 
         except httpx.HTTPStatusError as e:
-            logger.error(f"HTTP状态错误: {e.response.status_code} - {e.response.text}")
+            logger.error(f"HTTP状态错误: {e.response.status_code} - {safe_str(e.response.text)}")
             if client and not stream:
                 await client.aclose()
             raise UpstreamError(f"上游服务错误: {e.response.status_code}", e.response.status_code)
@@ -253,7 +254,7 @@ class ResponseProcessor:
                 await client.aclose()
             raise ProxyTimeoutError("请求超时")
         except Exception as e:
-            logger.error(f"请求异常: {e}")
+            logger.error(f"请求异常: {safe_str(e)}")
             if client and not stream:
                 await client.aclose()
             raise e
@@ -292,7 +293,7 @@ class ResponseProcessor:
             return full_content, token_info
                         
         except Exception as e:
-            logger.error(f"处理非流式响应错误: {e}")
+            logger.error(f"处理非流式响应错误: {safe_str(e)}")
             raise
     
     async def process_stream_response_with_tools(
@@ -370,7 +371,7 @@ class ResponseProcessor:
             yield ResponseConstants.STREAM_DONE_MARKER
             
         except Exception as e:
-            logger.error(f"流式响应处理错误: {e}")
+            logger.error(f"流式响应处理错误: {safe_str(e)}")
             error_chunk = self._create_chunk_data(
                 delta={},
                 finish_reason=ResponseConstants.FINISH_REASON_ERROR,

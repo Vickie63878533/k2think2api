@@ -9,6 +9,8 @@ import threading
 from typing import List, Dict, Optional, Tuple
 from datetime import datetime, timedelta
 
+from src.utils import safe_str
+
 logger = logging.getLogger(__name__)
 
 class TokenManager:
@@ -59,7 +61,7 @@ class TokenManager:
             logger.info(f"成功加载 {len(self.tokens)} 个token")
             
         except Exception as e:
-            logger.error(f"加载token文件失败: {e}")
+            logger.error(f"加载token文件失败: {safe_str(e)}")
             raise
     
     def get_next_token(self) -> Optional[str]:
@@ -117,7 +119,7 @@ class TokenManager:
                     token_info['last_failure'] = datetime.now()
                     
                     logger.warning(f"Token失败 (索引: {token_info['index']}, "
-                                 f"失败次数: {token_info['failures']}/{self.max_failures}): {error_message}")
+                                 f"失败次数: {token_info['failures']}/{self.max_failures}): {safe_str(error_message)}")
                     
                     # 检查是否达到最大失败次数
                     if token_info['failures'] >= self.max_failures:

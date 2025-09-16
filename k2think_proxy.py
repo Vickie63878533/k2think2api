@@ -14,13 +14,16 @@ from src.constants import APIConstants
 from src.exceptions import K2ThinkProxyError
 from src.models import ChatCompletionRequest
 from src.api_handler import APIHandler
+from src.utils import configure_logging_encoding, safe_str
 
 # 初始化配置
 try:
     Config.validate()
     Config.setup_logging()
+    # 配置日志编码以支持Unicode字符
+    configure_logging_encoding()
 except Exception as e:
-    print(f"配置错误: {e}")
+    print(f"配置错误: {safe_str(e)}")
     exit(1)
 
 logger = logging.getLogger(__name__)
@@ -171,7 +174,7 @@ async def reload_tokens():
             status_code=500,
             content={
                 "status": "error",
-                "message": f"重新加载失败: {str(e)}"
+                "message": f"重新加载失败: {safe_str(e)}"
             }
         )
 
