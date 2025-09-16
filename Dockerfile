@@ -17,9 +17,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY k2think_proxy.py .
 COPY src/ ./src/
 
-# 创建一个默认的空tokens.txt文件（如果没有通过volume挂载的话）
-RUN touch tokens.txt && echo "# 请通过docker-compose或volume挂载实际的tokens.txt文件" > tokens.txt
-
 # 创建非root用户运行应用
 RUN useradd -r -s /bin/false appuser && \
     chown -R appuser:appuser /app
@@ -27,10 +24,6 @@ USER appuser
 
 # 暴露端口
 EXPOSE 8001
-
-# 健康检查
-HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost:8001/health || exit 1
 
 # 启动应用
 CMD ["python", "k2think_proxy.py"]
